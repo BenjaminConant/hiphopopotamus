@@ -21,4 +21,9 @@ angular.module('hiphopopotamusApp')
     $scope.deleteThing = function(thing) {
       $http.delete('/api/things/' + thing._id);
     };
+    
+    $scope.lyrics = "Yeah, this album is dedicated to all the teachers that told me I'd never amount to nothin', to all the people that lived above the buildings that I was hustlin' in front of that called the police on me when I was just tryin' to make some money to feed my daughter, and all the niggas in the struggle, you know what I'm sayin'?  Uh-ha, it's all good baby bay-bee, uh";
+                      
+                      
+                     
   });
