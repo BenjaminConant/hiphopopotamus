@@ -92,9 +92,10 @@ var deferred = q.defer();
 var allPromises = [];
 var m = markov(1);
 
-for (var i = 0; i < kanye.albums.length - 1; i++) {
+for (var i = 0; i < kanye.albums.length && j < 3; i++) {
   var album = kanye.albums[i];
-  for (var j = 0; j < album.songs.length && j < 8; j++) {
+  for (var j = 0; j < album.songs.length && j < 3; j++) { 
+
     var song = album.songs[j];
     allPromises.push(getLyrics(i, j));
   }
