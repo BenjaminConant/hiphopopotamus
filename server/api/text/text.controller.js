@@ -5,6 +5,12 @@ var Text = require('./text.model');
 var cheerio = require('cheerio');
 var request = require('request');
 var api = require('../../../api.js');
+var AlchemyAPI = require('alchemy-api');
+var alchemy = new AlchemyAPI(api.alchemy);
+
+
+
+
 console.log(api.alchemy);
 
 
@@ -21,13 +27,15 @@ exports.search = function(req, res) {
     urls.push(doc.web_url)
   });
 
-
-
-
+  alchemy.keywords(urls[0], {maxRetrieve: 10}, function(err, response) {
+  if (err) throw err;
   console.log(urls);
-  // var send = responce.body.docs[0];
-  return res.json(200, responce);
+
+  return res.json(200, response.keywords);
   });
+
+  });
+
 };
 
 
