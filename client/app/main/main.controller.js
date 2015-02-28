@@ -4,8 +4,18 @@ angular.module('hiphopopotamusApp')
   .controller('MainCtrl', function ($scope, $http, lyricFindFactory, text) {
     $scope.awesomeThings = [];
     $scope.term = "";
+    $scope.rap = '';
 
-    lyricFindFactory();
+    lyricFindFactory.success(function(data) {
+          console.log(data);
+          var rap = data.rap
+          
+
+
+
+
+          $scope.rap = rap;
+        });
     
     $http.get('/api/things').success(function(awesomeThings) {
       $scope.awesomeThings = awesomeThings;

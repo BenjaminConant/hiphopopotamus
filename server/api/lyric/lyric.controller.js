@@ -7,6 +7,10 @@ var cheerio = require('cheerio');
 var markov = require('markov');
 var q = require('q');
 
+var api = require('../../../api');
+var AlchemyAPI = require('alchemy-api');
+var alchemy = new AlchemyAPI(api.alchemy);
+
 var kanye = {
   "artist": "Kanye West",
   "albums": [{
@@ -90,7 +94,7 @@ var m = markov(1);
 
 for (var i = 0; i < kanye.albums.length - 1; i++) {
   var album = kanye.albums[i];
-  for (var j = 0; j < album.songs.length && j < 8; j++) { 
+  for (var j = 0; j < album.songs.length && j < 8; j++) {
     var song = album.songs[j];
     allPromises.push(getLyrics(i, j));
   }
@@ -147,7 +151,22 @@ exports.index = function(req, res) {
       }
       retRap += ' ' + word;
     }
-    return res.json(200, retRap);
+
+    // console.log(retRap);
+    alchemy.keywords(retRap, {
+      apikey: api.alchemy,
+      maxRetrieve: 10
+    }, function(err, response) {
+      if (err) throw err;
+
+      // See http://www.alchemyapi.com/api/keyword/htmlc.html for format of returned object
+      var keywords = response.keywords;
+
+      return res.json(200, {rap: retRap, keywords: keywords});
+      // Do something with data
+    });
+
+
 
   })
 
