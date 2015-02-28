@@ -115,7 +115,10 @@ exports.index = function(req, res) {
               word = m.next(word);
               console.log(word.word);
               for (var i = 0; i < 100; i++) {
-                word = m.next(word.key)
+                word = m.next(word.key);
+                if (!word.word) {
+                  word = m.pick();
+                }
                 console.log('word ' + i + ': ', word.word);
               }
 
