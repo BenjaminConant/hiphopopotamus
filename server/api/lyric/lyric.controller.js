@@ -92,9 +92,9 @@ var deferred = q.defer();
 var allPromises = [];
 var m = markov(1);
 
-for (var i = 0; i < kanye.albums.length && j < 3; i++) {
+for (var i = 0; i < kanye.albums.length && i < 5; i++) {
   var album = kanye.albums[i];
-  for (var j = 0; j < album.songs.length && j < 3; j++) { 
+  for (var j = 0; j < album.songs.length && j < 5; j++) {
 
     var song = album.songs[j];
     allPromises.push(getLyrics(i, j));
@@ -127,14 +127,15 @@ exports.index = function(req, res) {
 
 
   // clearInterval(interval);
-
+  // console.log('prepromise');
   deferred.promise.then(function() {
-
+    // console.log('postpromise');
 
     var retRap = '';
     var word = m.pick();
     var nextObj;
     retRap += word;
+    // console.log('rap:', retRap);
     nextObj = m.next(word);
     if (nextObj) {
 
@@ -143,7 +144,7 @@ exports.index = function(req, res) {
       word = m.pick();
     }
     retRap += ' ' + word;
-    for (var i = 0; i < 600; i++) {
+    for (var i = 0; i < 400; i++) {
       nextObj = m.next(nextObj.key);
       if (!nextObj || !nextObj.word) {
         word = m.pick();
@@ -153,7 +154,6 @@ exports.index = function(req, res) {
       retRap += ' ' + word;
     }
 
-    // console.log(retRap);
     alchemy.keywords(retRap, {
       apikey: api.alchemy,
       maxRetrieve: 10
@@ -163,7 +163,12 @@ exports.index = function(req, res) {
       // See http://www.alchemyapi.com/api/keyword/htmlc.html for format of returned object
       var keywords = response.keywords;
 
-      return res.json(200, {rap: retRap, keywords: keywords});
+      // console.log('rap:', retRap);
+      // console.log('keywords: ', keywords);
+      return res.json(200, {
+        rap: retRap,
+        keywords: keywords
+      });
       // Do something with data
     });
 
