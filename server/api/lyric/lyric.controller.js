@@ -5,6 +5,7 @@ var Lyric = require('./lyric.model');
 var request = require('request');
 var cheerio = require('cheerio');
 var markov = require('markov');
+var q = require('q');
 
 var kanye = {
   "artist": "Kanye West",
@@ -82,58 +83,73 @@ var kanye = {
 };
 var regex = / /g;
 
+var deferred = q.defer();
+
+var allPromises = [];
+var m = markov(1);
+
+for (var i = 0; i < kanye.albums.length - 1; i++) {
+  var album = kanye.albums[i];
+  for (var j = 0; j < album.songs.length && j < 8; j++) { // album.songs.length
+    var song = album.songs[j];
+    allPromises.push(getLyrics(i, j));
+  }
+}
+
+q.allSettled(allPromises)
+  .then(function(results) {
+
+    var allLyrics = results.reduce(reduceFn, '');
+    console.log('all promises resolved!');
+    // console.log(allLyrics);
+
+    m.seed(allLyrics, function() {
+      console.log('done seeding');
+      deferred.resolve();
+    });
+  });
 
 // Get list of lyrics
 exports.index = function(req, res) {
 
-  request.get('http://lyrics.wikia.com/api.php?func=getSong&artist=' + kanye.artist.replace(regex, '_') + '&song=' + kanye.albums[0].songs[1].replace(regex, '_') + '&fmt=realjson',
-    function(error, response, body) {
-      if (!error) {
-
-        var url = JSON.parse(body).url;
-        // console.log('url retrieved:', url);
-        request.get(url,
-          function(error, response, body) {
-            // console.log('cheerio acquired:', body);
-            var $ = cheerio.load(body);
-            var html = $('.lyricbox').html();
-            html = html.replace(/<br>/g, '\n');
-            var text = html.replace(/<script>.*<\/script>/g, '');
-            text = text.replace(/<!--[\w\W]*-->/g, '');
-            text = text.replace(/<div.*<\/div>/g, '');
-            text = text.replace(/&apos;/g, '\'');
-            text = text.replace(/\[.*\]/g, '');
+  // var time = 0;
+  // setTimeout(function() {
+  //   console.log('timeout worked!')
+  // }, 1000)
+  // var interval = setInterval(function() {
+  //   console.log(time++, ' seconds');
+  // }, 1000);
 
 
-            console.log('kanyetext:', text);
+  // clearInterval(interval);
+
+  deferred.promise.then(function() {
 
 
-            var m = markov(1);
-            m.seed(text, function() {
-              var word = m.pick();
-              // console.log(word);
-              word = m.next(word);
-              console.log(word.word);
-              for (var i = 0; i < 100; i++) {
-                word = m.next(word.key);
-                if (!word.word) {
-                  word = m.pick();
-                }
-                console.log('word ' + i + ': ', word.word);
-              }
+    var retRap = '';
+    var word = m.pick();
+    var nextObj;
+    retRap += word;
+    nextObj = m.next(word);
+    if (nextObj) {
 
-
-
-            })
-
-            return res.json(200, text);
-          })
-
-
-
+      word = nextObj.word;
+    } else {
+      word = m.pick();
+    }
+    retRap += ' ' + word;
+    for (var i = 0; i < 600; i++) {
+      nextObj = m.next(nextObj.key);
+      if (!nextObj || !nextObj.word) {
+        word = m.pick();
+      } else {
+        word = nextObj.word
       }
-    });
+      retRap += ' ' + word;
+    }
+    return res.json(200, retRap);
 
+  })
 
 
   // Lyric.find(function(err, lyrics) {
@@ -143,6 +159,48 @@ exports.index = function(req, res) {
   //   return res.json(200, lyrics);
   // });
 };
+
+function reduceFn(prev, curr) {
+  var next = prev;
+  if (curr.state !== 'fulfilled') return next;
+  return next + ' ' + curr.value;
+}
+
+function getLyrics(albumIdx, songIdx) {
+
+  var deferred = q.defer();
+
+  request.get('http://lyrics.wikia.com/api.php?func=getSong&artist=' + kanye.artist.replace(regex, '_') + '&song=' + kanye.albums[albumIdx].songs[songIdx].replace(regex, '_') + '&fmt=realjson',
+    function(error, response, body) {
+      if (!error) {
+        // console.log(albumIdx, ', ', songIdx, ' completed');
+        var url = JSON.parse(body).url;
+        // console.log('url retrieved:', url);
+        request.get(url,
+          function(error, response, body) {
+            // console.log('cheerio acquired:', body);
+            var $ = cheerio.load(body);
+            var html = $('.lyricbox').html();
+            if (!html) return deferred.reject(new Error('no html here?'));
+            html = html.replace(/<br>/g, '\n');
+            var text = html.replace(/<script>.*<\/script>/g, '');
+            text = text.replace(/<!--[\w\W]*-->/g, '');
+            text = text.replace(/<div.*<\/div>/g, '');
+            text = text.replace(/&apos;/g, '\'');
+            text = text.replace(/&amp;/g, '&');
+            text = text.replace(/\[.*\]/g, '');
+
+            deferred.resolve(text);
+          })
+      } else {
+        console.log(albumIdx, ', ', songIdx, ' failed!');
+        deferred.reject(error);
+      }
+    });
+
+  return deferred.promise;
+}
+
 
 // Get a single lyric
 exports.show = function(req, res) {
