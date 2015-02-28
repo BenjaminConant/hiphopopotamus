@@ -1,9 +1,11 @@
 'use strict';
 
 angular.module('hiphopopotamusApp')
-  .controller('MainCtrl', function ($scope, $http) {
+  .controller('MainCtrl', function ($scope, $http, lyricFindFactory) {
     $scope.awesomeThings = [];
 
+    lyricFindFactory();
+    
     $http.get('/api/things').success(function(awesomeThings) {
       $scope.awesomeThings = awesomeThings;
     });
