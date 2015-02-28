@@ -4,6 +4,7 @@ var _ = require('lodash');
 var Lyric = require('./lyric.model');
 var request = require('request');
 var cheerio = require('cheerio');
+var markov = require('markov');
 
 var kanye = {
   "artist": "Kanye West",
@@ -90,9 +91,10 @@ exports.index = function(req, res) {
       if (!error) {
 
         var url = JSON.parse(body).url;
-
+        // console.log('url retrieved:', url);
         request.get(url,
           function(error, response, body) {
+            // console.log('cheerio acquired:', body);
             var $ = cheerio.load(body);
             var html = $('.lyricbox').html();
             html = html.replace(/<br>/g, '\n');
@@ -103,8 +105,23 @@ exports.index = function(req, res) {
             text = text.replace(/\[.*\]/g, '');
 
 
-            console.log(text);
+            console.log('kanyetext:', text);
 
+
+            var m = markov(1);
+            m.seed(text, function() {
+              var word = m.pick();
+              // console.log(word);
+              word = m.next(word);
+              console.log(word.word);
+              for (var i = 0; i < 100; i++) {
+                word = m.next(word.key)
+                console.log('word ' + i + ': ', word.word);
+              }
+
+
+
+            })
 
             return res.json(200, text);
           })
